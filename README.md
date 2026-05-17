@@ -1,117 +1,252 @@
-# `template-compendium-adapter-dotnet`
+# Compendium.Adapters.Gemini
 
-Starter for a new **Compendium** adapter (.NET 9, single-vendor, lives in its own repository).
+Direct adapter for the **Google Gemini REST API** (`https://generativelanguage.googleapis.com`) that implements [`IAIProvider`](https://www.nuget.org/packages/Compendium.Abstractions.AI) from `Compendium.Abstractions.AI`.
 
-Aligns with [ADR 0006](../../docs/adr/0006-multi-repo-adapter-split.md) (split heavy adapters into per-adapter repositories). Encodes the [`compendium-test-author`](.claude/skills/compendium-test-author/SKILL.md) skill so `/tests` and `/coverage` work out of the box.
-
-## What you get
-
-```
-.
-├── src/Compendium.Adapters.Gemini/        — the adapter project (rename Gemini → <Vendor>)
-│   ├── DependencyInjection/
-│   │   └── ServiceCollectionExtensions.cs
-│   ├── Options/GeminiOptions.cs
-│   └── GeminiAdapter.cs                   — illustrates the IAdapter (or any port) shape
-├── tests/Unit/Compendium.Adapters.Gemini.Tests/
-│   ├── DependencyInjection/ServiceCollectionExtensionsTests.cs
-│   ├── Options/GeminiOptionsTests.cs
-│   └── GlobalUsings.cs
-├── .github/workflows/ci.yml               — build + test + 90% coverage gate
-├── .claude/skills/compendium-test-author/SKILL.md
-├── .claude/commands/{tests,coverage}.md
-├── .config/dotnet-tools.json              — pins ReportGenerator
-├── Directory.Build.props
-├── Directory.Packages.props               — central package management
-├── Compendium.Adapters.Gemini.sln
-├── global.json                            — pins .NET 9 SDK
-└── LICENSE
-```
-
-## Conventions enforced (copy from Compendium framework)
-
-| Aspect | Choice |
+| What | Value |
 |---|---|
-| Test framework | xUnit 2.9.3 |
-| Assertions | FluentAssertions 6.12.1 — never `Assert.*` |
-| Mocks | NSubstitute 5.1.0 — never Moq |
-| Coverage | coverlet.collector 6.0.2 + ReportGenerator (local tool) |
-| Result pattern | `Result<T>` from `Compendium.Abstractions` (NuGet) |
-| Async | `async Task` + cancellation tokens — never `Thread.Sleep`, never `.Result` |
-| Test naming | `{SUT}Tests` / `{Method}_{Scenario}_{Expected}` |
-| Test layout | AAA explicit (`// Arrange / // Act / // Assert`) |
-| File header | Sassy Solutions copyright block |
-| HTTP mocking (when applicable) | `RichardSzalay.MockHttp` 7.0.0 |
-| Container fixtures (integration) | `Testcontainers` 4.11.0 + `IAsyncLifetime` + `[RequiresDockerFact]` |
-| CI gate | ≥ 90 % line coverage on the unit-testable surface (DB-bound types may be exempted with documented reason) |
+| Target framework | net9.0 |
+| Abstractions pin | `Compendium.Abstractions.AI` 1.0.1 |
+| HTTP stack | Typed `HttpClient` + `Microsoft.Extensions.Http.Resilience` (standard pipeline) + `System.Text.Json` |
+| Auth | `?key=<ApiKey>` query parameter on every request |
+| Surface | Chat completions (sync + SSE streaming), embeddings (single + batched), tool / function calling, structured outputs, system instructions, vision (inline & file-URI) |
+| Tests | xUnit 2.9 + FluentAssertions + NSubstitute + RichardSzalay.MockHttp |
 
-## How to scaffold a new adapter
+Sits alongside [`Compendium.Adapters.OpenAI`](https://github.com/sassy-solutions/compendium-adapter-openai) and [`Compendium.Adapters.Anthropic`](https://github.com/sassy-solutions/compendium-adapter-anthropic). Use this adapter when you want direct, billable access to Google's Gemini models (1.5 Pro, 2.0 Flash, the embedding family, etc.) — for cost, latency, or Gemini-specific capabilities (long context, native multimodal). For Vertex AI Gemini (Google Cloud auth, different endpoints), use the separate `compendium-adapter-vertex-gemini` package once it lands.
+
+## Installation
 
 ```bash
-# 1. Pick a vendor name (use PascalCase: Stripe, PostgreSQL, Redis…)
-export VENDOR=Stripe
-
-# 2. Copy the template to a new directory next to your Compendium clone
-cp -r templates/adapter-dotnet ../compendium-adapter-${VENDOR,,}
-cd ../compendium-adapter-${VENDOR,,}
-
-# 3. Find-and-replace placeholders (BSD sed on macOS — adapt for GNU sed)
-find . -type f \( -name '*.cs' -o -name '*.csproj' -o -name '*.sln' -o -name '*.md' -o -name '*.yml' -o -name '*.json' -o -name '*.props' \) -exec sed -i '' -e "s/Gemini/${VENDOR}/g" -e "s/gemini/${VENDOR,,}/g" {} +
-
-# 4. Rename folders/files
-git mv src/Compendium.Adapters.Gemini              src/Compendium.Adapters.${VENDOR}
-git mv src/Compendium.Adapters.${VENDOR}/Compendium.Adapters.Gemini.csproj \
-       src/Compendium.Adapters.${VENDOR}/Compendium.Adapters.${VENDOR}.csproj
-git mv src/Compendium.Adapters.${VENDOR}/GeminiAdapter.cs                   \
-       src/Compendium.Adapters.${VENDOR}/${VENDOR}Adapter.cs
-git mv src/Compendium.Adapters.${VENDOR}/Options/GeminiOptions.cs           \
-       src/Compendium.Adapters.${VENDOR}/Options/${VENDOR}Options.cs
-
-git mv tests/Unit/Compendium.Adapters.Gemini.Tests           tests/Unit/Compendium.Adapters.${VENDOR}.Tests
-git mv tests/Unit/Compendium.Adapters.${VENDOR}.Tests/Compendium.Adapters.Gemini.Tests.csproj \
-       tests/Unit/Compendium.Adapters.${VENDOR}.Tests/Compendium.Adapters.${VENDOR}.Tests.csproj
-git mv tests/Unit/Compendium.Adapters.${VENDOR}.Tests/Options/GeminiOptionsTests.cs \
-       tests/Unit/Compendium.Adapters.${VENDOR}.Tests/Options/${VENDOR}OptionsTests.cs
-
-mv Compendium.Adapters.Gemini.sln Compendium.Adapters.${VENDOR}.sln
-
-# 5. Initialise git and verify build
-git init
-git add .
-dotnet build -c Release
-dotnet test  -c Release
+dotnet add package Compendium.Adapters.Gemini
 ```
 
-## What you still need to do per repo
+## Configuration
 
-After scaffolding :
+Register at startup:
 
-- **Author the actual adapter code.** Replace `GeminiAdapter` with the real implementation of whatever port (`IEventStore`, `IIdentityProvider`, `IBillingProvider`, `IEmailSender`, …) you're filling.
-- **NuGet publishing.** Add `NUGET_API_KEY` to repo secrets ; the included `release.yml` (TODO — add when first needed) packs and pushes on `v*` tags.
-- **Branch protection.** Require `build-test` (CI), at least one review, no force-push to `main`.
-- **Renovate or Dependabot.** Renovate config at `renovate.json` — track Compendium NuGets so a framework release auto-PRs the adapter. Dependabot for npm-style scheduled dep bumps.
-- **Integration tests** (optional but recommended for adapters with external systems). Add `tests/Integration/Compendium.Adapters.<Vendor>.IntegrationTests/` with `Testcontainers` if needed. Keep them out of the unit CI job.
-
-## Local-dev mode (when you're modifying both framework and adapter)
-
-Edit `Directory.Packages.props` to add a project reference instead of the NuGet :
-
-```xml
-<ItemGroup Condition="'$(LinkLocalCompendium)' == 'true'">
-  <PackageReference Remove="Compendium.Abstractions" />
-  <ProjectReference Include="../compendium/src/Abstractions/Compendium.Abstractions/Compendium.Abstractions.csproj" />
-</ItemGroup>
+```csharp
+services.AddCompendiumGemini(opt =>
+{
+    opt.ApiKey = builder.Configuration["Gemini:ApiKey"]!;
+    opt.DefaultModel = "gemini-2.0-flash";
+    opt.DefaultEmbeddingModel = "text-embedding-004";
+});
 ```
 
-Then `dotnet build -p:LinkLocalCompendium=true`.
+…or bind from `IConfiguration` (section `Gemini`):
 
-## Common pitfalls (read before pushing)
+```csharp
+services.AddCompendiumGemini(builder.Configuration);
+```
 
-- **Broken `Compendium.sln`** : every `Project("{...}")` MUST have a matching `EndProject` on the next non-empty line, and every GUID listed in `Project(...)` MUST appear in the `GlobalSection(ProjectConfigurationPlatforms)` (4 `.Debug|Any CPU.*` + `.Release|Any CPU.*` lines). Linux CI is strict ; macOS is lenient and will mask this bug. **Always** use `dotnet sln add` / `dotnet sln remove` instead of hand-editing the sln. Verify with `dotnet sln list && dotnet build -c Release` before pushing.
-- **`gh pr merge` from a detached worktree** : fails opaquely with "could not determine current branch". Always run merges from a checkout that's on a named branch (typically `main`).
-- **MinVer tag prefix** : pinned to `v` in `Directory.Build.props`. The first tag must continue the version sequence of the package's previous releases (e.g. if `Compendium.Adapters.Stripe` was last published as `1.0.0-preview.8` from the framework, the first tag here is `v1.0.0-preview.9`).
-- **No `--no-verify`, no `--force-push`** (use `--force-with-lease` instead). No version bumps in `Directory.Packages.props` outside of Renovate-managed PRs.
-- **Skill / commands** : `.claude/skills/compendium-test-author/SKILL.md` and `.claude/commands/{tests,coverage}.md` ship pre-baked. `/tests` and `/coverage` work out of the box in Claude Code.
+```jsonc
+{
+  "Gemini": {
+    "ApiKey": "...",
+    "BaseUrl": "https://generativelanguage.googleapis.com",
+    "ApiVersion": "v1beta",
+    "DefaultModel": "gemini-2.0-flash",
+    "DefaultEmbeddingModel": "text-embedding-004",
+    "TimeoutSeconds": 120,
+    "MaxEmbeddingsBatchSize": 100
+  }
+}
+```
+
+The standard resilience pipeline (`AddStandardResilienceHandler`) is applied automatically; tune retry/timeout behaviour by configuring `GeminiOptions.TimeoutSeconds` and `RetryAttempts`.
+
+## Usage
+
+### Chat (sync)
+
+```csharp
+var provider = sp.GetRequiredService<IAIProvider>();
+var result = await provider.CompleteAsync(new CompletionRequest
+{
+    Model = "gemini-2.0-flash",
+    SystemPrompt = "Be concise.",
+    Messages = new List<Message> { Message.User("Pick a colour.") },
+    MaxTokens = 64
+});
+if (result.IsSuccess) Console.WriteLine(result.Value.Content);
+```
+
+`SystemPrompt` is sent as Gemini's top-level `systemInstruction` field — not as a content part — exactly per Google's spec.
+
+### Chat (streaming)
+
+```csharp
+await foreach (var chunk in provider.StreamCompleteAsync(request))
+{
+    if (chunk.IsSuccess) Console.Write(chunk.Value.ContentDelta);
+}
+```
+
+Implemented via `streamGenerateContent?alt=sse`; the final chunk carries `IsFinal=true`, `FinishReason`, and `Usage` (token counts).
+
+### Embeddings
+
+```csharp
+var result = await provider.EmbedAsync(new EmbeddingRequest
+{
+    Model = "text-embedding-004",
+    Inputs = manyTexts,
+    Dimensions = 768 // optional — sent as outputDimensionality
+});
+```
+
+- Single input goes through `embedContent`.
+- Multiple inputs are batched through `batchEmbedContents` in chunks of `MaxEmbeddingsBatchSize` (default 100, Gemini's documented cap).
+
+### Tool / function calling
+
+```csharp
+using Compendium.Adapters.Gemini.Tools;
+using Compendium.Abstractions.AI.Agents.Models;
+
+var tools = new List<AgentTool>
+{
+    new(
+        Name: "get_weather",
+        Description: "Returns the current weather for the named city.",
+        InputSchemaJson: """{"type":"object","properties":{"city":{"type":"string"}},"required":["city"]}""")
+};
+
+var request = new CompletionRequest
+{
+    Model = "gemini-2.0-flash",
+    Messages = new List<Message> { Message.User("What's the weather in Paris?") }
+}.WithTools(tools, toolChoice: "auto");
+
+var result = await provider.CompleteAsync(request);
+foreach (var call in result.Value.GetToolCalls())
+{
+    Console.WriteLine($"{call.ToolName}({call.ArgumentsJson})");
+}
+```
+
+`toolChoice` maps to Gemini's `functionCallingConfig.mode`:
+
+| Value | Mode |
+|---|---|
+| `"auto"` | `AUTO` |
+| `"any"` / `"required"` | `ANY` |
+| `"none"` | `NONE` |
+| any other string | `ANY` + `allowedFunctionNames: [<name>]` |
+
+To feed a tool result back to the model, send a `Message` with `Role = MessageRole.Tool` and `Name = "<function_name>"`; the adapter translates it into a `functionResponse` content. The `Content` may be a JSON object (passed through verbatim) or plain text (wrapped as `{"result": "<text>"}`).
+
+### Structured outputs
+
+```csharp
+using Compendium.Adapters.Gemini.StructuredOutputs;
+
+var schema = """
+{
+  "type":"object",
+  "properties":{ "city": {"type":"string"}, "tempC": {"type":"number"} },
+  "required":["city","tempC"]
+}
+""";
+
+var request = new CompletionRequest
+{
+    Model = "gemini-2.0-flash",
+    Messages = new List<Message> { Message.User("Weather in Paris as JSON.") }
+}.WithStructuredOutput(schema);
+
+// or: plain JSON mode (no schema)
+request = request.WithJsonMode();
+```
+
+Schema mode sets `responseMimeType: "application/json"` + `responseSchema`. JSON mode sets only the mime type. Globally opt every request into JSON mode with `GeminiOptions.UseStructuredOutputsByDefault = true`.
+
+### Vision (images & files)
+
+`CompletionRequest` has no first-class image field, so attach a list of pre-built `GeminiPart` entries under the `gemini.vision_parts` key in `AdditionalParameters`:
+
+```csharp
+using Compendium.Adapters.Gemini.Http.Models;
+
+var visionParts = new List<GeminiPart>
+{
+    new() { InlineData = new GeminiInlineData { MimeType = "image/png", Data = Convert.ToBase64String(bytes) } },
+    new() { FileData = new GeminiFileData { MimeType = "image/jpeg", FileUri = "https://files.example/img.jpg" } }
+};
+
+var request = new CompletionRequest
+{
+    Model = "gemini-2.0-flash",
+    Messages = new List<Message> { Message.User("Describe the images.") },
+    AdditionalParameters = new Dictionary<string, object>
+    {
+        ["gemini.vision_parts"] = (IReadOnlyList<GeminiPart>)visionParts
+    }
+};
+```
+
+These parts are appended to the last user content. Files larger than ~20 MB should be uploaded via the Files API and referenced by `fileUri`.
+
+### Cancellation
+
+Every async surface accepts a `CancellationToken`. The adapter:
+
+- re-throws `OperationCanceledException` when the caller cancelled, so callers can `await` cleanly;
+- maps non-caller cancellations (timeouts) into `Result.Failure(AIErrors.Timeout(...))`;
+- aborts streaming loops on cancellation between SSE chunks.
+
+### Error mapping
+
+| HTTP | `Error.Code` |
+|---|---|
+| 401 / 403 | `AI.InvalidApiKey` |
+| 402 | `AI.InsufficientCredits` |
+| 404 | `AI.ModelNotFound` |
+| 429 | `AI.RateLimitExceeded` |
+| 5xx / other | `AI.ProviderError` |
+| Timeout (non-cancellation) | `AI.Timeout` |
+
+Gemini's structured error body (`{ "error": { "code", "message", "status" } }`) is parsed when present and surfaced through the `Error` payload.
+
+## Observability
+
+`GeminiOptions.EnableLogging = true` emits the raw request/response bodies at `Debug` level via the injected `ILogger<GeminiHttpClient>`. Keep it off in production — payloads can contain user PII and the API key is on the URL.
+
+## Sample
+
+[`samples/01-chat-with-tool`](samples/01-chat-with-tool) wires up a 1-tool agent and dumps the model's tool-call decision. Run with `GEMINI_API_KEY=... dotnet run --project samples/01-chat-with-tool`.
+
+## Integration tests
+
+Live tests live in [`tests/Integration/Compendium.Adapters.Gemini.IntegrationTests`](tests/Integration). They:
+
+- skip automatically when `GEMINI_API_KEY` is unset;
+- are excluded from the default CI run via `--filter "FullyQualifiedName!~IntegrationTests"`;
+- hit `gemini-2.0-flash` / `text-embedding-004` so they cost cents per full run.
+
+```bash
+export GEMINI_API_KEY=...
+dotnet test -c Release --filter "FullyQualifiedName~IntegrationTests"
+```
+
+## SDK choice (ADR)
+
+Decision: **hand-rolled HttpClient + System.Text.Json**, no `Mscc.GenerativeAI` (community SDK) dependency.
+
+Reasons:
+
+- Avoids the version churn and indirect-deps surface of a community SDK that doesn't track the official spec.
+- Lets the framework's pinned `Microsoft.Extensions.Http.Resilience` pipeline handle retries / circuit breaking.
+- Mirrors the proven `Compendium.Adapters.OpenAI` / `Compendium.Adapters.Anthropic` patterns.
+- Gemini's REST surface is small and stable — `generateContent`, `streamGenerateContent`, `embedContent`, `batchEmbedContents`, `models`.
+
+If Google ships an official, stable .NET SDK with a sane transitive graph, we may pivot — document any switch with an updated ADR in `docs/`.
+
+## Out of scope (first preview)
+
+- **Vertex AI Gemini** — different endpoints + Google Cloud OAuth — separate `Compendium.Adapters.VertexGemini` package.
+- **Live API** (low-latency voice / multimodal streaming) — separate adapter.
+- **Code execution tool** — feature-flagged, v2.
+- **Caching API** (`cachedContents`) — v2.
 
 ## License
 

@@ -1,4 +1,4 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
@@ -9,6 +9,14 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compendium.Adapters.Gemini", "src\Compendium.Adapters.Gemini\Compendium.Adapters.Gemini.csproj", "{A1A1A1A1-0000-0000-0000-000000000001}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compendium.Adapters.Gemini.Tests", "tests\Unit\Compendium.Adapters.Gemini.Tests\Compendium.Adapters.Gemini.Tests.csproj", "{A1A1A1A1-0000-0000-0000-000000000002}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{F2A7617B-ACC2-4323-B00D-E508AEC437C5}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compendium.Adapters.Gemini.Sample.ChatWithTool", "samples\01-chat-with-tool\Compendium.Adapters.Gemini.Sample.ChatWithTool.csproj", "{DB763283-1BDF-4E45-8B93-B2E62B9FBB34}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Integration", "Integration", "{5C3A39DA-B53F-477F-9BE5-4C9C684DC08C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Compendium.Adapters.Gemini.IntegrationTests", "tests\Integration\Compendium.Adapters.Gemini.IntegrationTests\Compendium.Adapters.Gemini.IntegrationTests.csproj", "{0C479C6A-DFDD-4C86-9999-6092341E18FE}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,9 +32,20 @@ Global
 		{A1A1A1A1-0000-0000-0000-000000000002}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1A1A1A1-0000-0000-0000-000000000002}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1A1A1A1-0000-0000-0000-000000000002}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB763283-1BDF-4E45-8B93-B2E62B9FBB34}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB763283-1BDF-4E45-8B93-B2E62B9FBB34}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB763283-1BDF-4E45-8B93-B2E62B9FBB34}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB763283-1BDF-4E45-8B93-B2E62B9FBB34}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0C479C6A-DFDD-4C86-9999-6092341E18FE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0C479C6A-DFDD-4C86-9999-6092341E18FE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0C479C6A-DFDD-4C86-9999-6092341E18FE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0C479C6A-DFDD-4C86-9999-6092341E18FE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{A1A1A1A1-0000-0000-0000-000000000001} = {D6C5C0A8-4A5A-4A5A-9C4A-1F4A4F4F4F01}
 		{A1A1A1A1-0000-0000-0000-000000000002} = {D6C5C0A8-4A5A-4A5A-9C4A-1F4A4F4F4F02}
+		{DB763283-1BDF-4E45-8B93-B2E62B9FBB34} = {F2A7617B-ACC2-4323-B00D-E508AEC437C5}
+		{5C3A39DA-B53F-477F-9BE5-4C9C684DC08C} = {D6C5C0A8-4A5A-4A5A-9C4A-1F4A4F4F4F02}
+		{0C479C6A-DFDD-4C86-9999-6092341E18FE} = {5C3A39DA-B53F-477F-9BE5-4C9C684DC08C}
 	EndGlobalSection
 EndGlobal

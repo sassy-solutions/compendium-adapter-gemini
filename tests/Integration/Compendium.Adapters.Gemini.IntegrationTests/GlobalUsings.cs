@@ -5,18 +5,13 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-global using System.Net;
-global using System.Net.Http;
-global using System.Text.Json;
 global using Compendium.Abstractions.AI;
 global using Compendium.Abstractions.AI.Agents.Models;
 global using Compendium.Abstractions.AI.Models;
-global using Compendium.Adapters.Gemini.Configuration;
-global using Compendium.Adapters.Gemini.Services;
-global using Compendium.Core.Results;
+global using Compendium.Adapters.Gemini.DependencyInjection;
+global using Compendium.Adapters.Gemini.StructuredOutputs;
+global using Compendium.Adapters.Gemini.Tools;
 global using FluentAssertions;
+global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
-global using Microsoft.Extensions.Options;
-global using NSubstitute;
-global using RichardSzalay.MockHttp;
 global using Xunit;
