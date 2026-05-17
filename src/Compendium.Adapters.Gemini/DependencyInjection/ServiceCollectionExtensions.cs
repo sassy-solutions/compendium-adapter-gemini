@@ -5,59 +5,59 @@
 // </copyright>
 // -----------------------------------------------------------------------
 
-using Compendium.Adapters.Gemini.Options;
+using Compendium.Adapters.Gemini.Configuration;
+using Compendium.Adapters.Gemini.Http;
+using Compendium.Adapters.Gemini.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Compendium.Adapters.Gemini.DependencyInjection;
 
 /// <summary>
-/// DI registration helpers for the Gemini adapter.
+/// DI extensions for the Gemini Compendium adapter.
 /// </summary>
 public static class ServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers <see cref="GeminiAdapter"/> and its options.
+    /// Registers Gemini as the <see cref="IAIProvider"/> with options bound from
+    /// <paramref name="configuration"/> at section <see cref="GeminiOptions.SectionName"/>.
     /// </summary>
-    /// <param name="services">DI container.</param>
-    /// <param name="configuration">Source configuration; section <see cref="GeminiOptions.SectionName"/> is bound.</param>
-    /// <returns>The same <paramref name="services"/> for chaining.</returns>
-    public static IServiceCollection AddCompendiumGeminiAdapter(
+    public static IServiceCollection AddCompendiumGemini(
         this IServiceCollection services,
         IConfiguration configuration)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        services.AddOptions<GeminiOptions>()
-            .Bind(configuration.GetSection(GeminiOptions.SectionName))
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
-
-        services.AddSingleton<GeminiAdapter>();
-
-        return services;
+        services.Configure<GeminiOptions>(configuration.GetSection(GeminiOptions.SectionName));
+        return services.AddCompendiumGeminiCore();
     }
 
     /// <summary>
-    /// Registers <see cref="GeminiAdapter"/> with an inline configuration callback.
+    /// Registers Gemini as the <see cref="IAIProvider"/> with options configured inline.
     /// </summary>
-    /// <param name="services">DI container.</param>
-    /// <param name="configure">Callback to mutate <see cref="GeminiOptions"/>.</param>
-    /// <returns>The same <paramref name="services"/> for chaining.</returns>
-    public static IServiceCollection AddCompendiumGeminiAdapter(
+    public static IServiceCollection AddCompendiumGemini(
         this IServiceCollection services,
-        Action<GeminiOptions> configure)
+        Action<GeminiOptions> configureOptions)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentNullException.ThrowIfNull(configure);
+        ArgumentNullException.ThrowIfNull(configureOptions);
 
-        services.AddOptions<GeminiOptions>()
-            .Configure(configure)
-            .ValidateDataAnnotations()
-            .ValidateOnStart();
+        services.Configure(configureOptions);
+        return services.AddCompendiumGeminiCore();
+    }
 
-        services.AddSingleton<GeminiAdapter>();
+    private static IServiceCollection AddCompendiumGeminiCore(this IServiceCollection services)
+    {
+        services.AddHttpClient<GeminiHttpClient>((sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<GeminiOptions>>().Value;
+            client.Timeout = TimeSpan.FromSeconds(options.TimeoutSeconds);
+        })
+        .AddStandardResilienceHandler();
+
+        services.AddSingleton<GeminiAIProvider>();
+        services.AddSingleton<IAIProvider>(sp => sp.GetRequiredService<GeminiAIProvider>());
 
         return services;
     }
